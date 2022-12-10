@@ -136,6 +136,9 @@ main = hspec $ do
     it "does escaping"
         $ [r|add_executable("foo \n \; bar")|]
       ~~> File [ CommandElement $ CommandInvocation "add_executable" ["foo \n ; bar"] ]
+    it "does variable evaluation"
+        $ [r|add_executable("foo ${variable} bar")|]
+      ~~> File [ CommandElement $ CommandInvocation "add_executable" ["foo bar"] ]
     it "parses command with multiline arg"
         $ dropLeading
           [r|add_executable("foo
