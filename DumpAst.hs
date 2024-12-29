@@ -50,14 +50,11 @@ instance PrettyPrint FileElement where
 instance PrettyPrint CommandInvocation where
   prettyPrint (CommandInvocation x y) indent_value = do
     let child_indent_value = indent_value + 1
-    let sub_child_indent_value = child_indent_value + 1
     let current_indent = indentTab indent_value
     let child_indent = indentTab child_indent_value
     putStrLn $ current_indent ++ "CommandInvocation{"
-    putStrLn $ child_indent ++ "commandId: " ++ show x
-    putStrLn $ child_indent ++ "commandArgs: ["
-    mapM_ (`prettyPrint` sub_child_indent_value) y
-    putStrLn $ child_indent ++ "]"
+    putStrLn $ child_indent ++ show x
+    mapM_ (`prettyPrint` child_indent_value) y
     putStrLn $ current_indent ++ "}"
 
 instance PrettyPrint Argument where
@@ -79,8 +76,8 @@ instance PrettyPrint Literal where
     putStrLn $ current_indent ++ "}"
 
 instance PrettyPrint LiteralElem where
-  prettyPrint (LiteralString x) indent_value = putStrLn $ indentTab indent_value ++ "LiteralString{literalString: " ++ show x ++ "}"
-  prettyPrint (VariableReference x) indent_value = putStrLn $ indentTab indent_value ++ "VariableReference{variableName: " ++ show x ++ "}"
+  prettyPrint (LiteralString x) indent_value = putStrLn $ indentTab indent_value ++ "LiteralString{" ++ show x ++ "}"
+  prettyPrint (VariableReference x) indent_value = putStrLn $ indentTab indent_value ++ "VariableReference{" ++ show x ++ "}"
 
 main :: IO ()
 main = do
