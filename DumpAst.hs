@@ -1,20 +1,21 @@
-import System.Environment ( getArgs )
-import Data.List (intercalate)
-import Language.CMake.Parser (fileParser)
-import Text.Trifecta.Parser (parseFromFile)
 import Data.Foldable (forM_)
-import Language.CMake.AST (File (fileElements, File), FileElement (CommandElement, NonCommandElement), CommandInvocation (CommandInvocation), Argument (Argument), Literal (Literal), LiteralElem (LiteralString, VariableReference))
+import Data.List (intercalate)
+import Language.CMake.AST (Argument (Argument), CommandInvocation (CommandInvocation), File (File), FileElement (CommandElement, NonCommandElement), Literal (Literal), LiteralElem (LiteralString, VariableReference))
+import Language.CMake.Parser (fileParser)
+import System.Environment (getArgs)
+import Text.Trifecta.Parser (parseFromFile)
 
-usage:: String
+usage :: String
 usage = "Usage: DumpAst <filename>"
 
-parseArgs:: [String] -> (String, String)
-parseArgs (_head:_tail) = (filename, error_message) where
-  error_message = if not $ null _tail then "Unknown argument(s): " ++ intercalate "," _tail ++ ". " ++ usage else ""
-  filename = if null _tail then _head else ""
+parseArgs :: [String] -> (String, String)
+parseArgs (_head : _tail) = (filename, error_message)
+  where
+    error_message = if not $ null _tail then "Unknown argument(s): " ++ intercalate "," _tail ++ ". " ++ usage else ""
+    filename = if null _tail then _head else ""
 parseArgs _ = ("", "Needs one argument! " ++ usage)
 
-parseFile:: String -> IO ()
+parseFile :: String -> IO ()
 parseFile filename = do
   putStrLn ("Parsing file: " ++ filename ++ "...")
   do
@@ -22,49 +23,60 @@ parseFile filename = do
     forM_ result (\x -> prettyPrint x 0)
   putStrLn "Done."
 
-indentTab:: Int -> String
+indentTab :: Int -> String
 indentTab x = concat $ replicate x "\t"
 
 class PrettyPrint a where
-  prettyPrint :: a -> Int -> IO()
+  prettyPrint :: a -> Int -> IO ()
 
 instance PrettyPrint File where
   prettyPrint (File []) _ = putStrLn "File{}"
-  prettyPrint (File (x:xs)) _ = do 
+  prettyPrint (File (x : xs)) _ = do
     putStrLn "File{"
     prettyPrint x 1
-    mapM_ (\x -> prettyPrint x 1) xs
+    mapM_ (`prettyPrint` 1) xs
     putStrLn "}"
 
 instance PrettyPrint FileElement where
   prettyPrint (CommandElement x) indent_value = do
-    putStrLn $ indentTab indent_value ++ "CommandElement{"
-    prettyPrint x $ indent_value + 1 
-    putStrLn $ indentTab indent_value ++ "}"
-  prettyPrint NonCommandElement indent_value = putStrLn $ indentTab indent_value ++ "NonCommandElement{}"
+    let current_indent = indentTab indent_value
+    putStrLn $ current_indent ++ "CommandElement{"
+    prettyPrint x $ indent_value + 1
+    putStrLn $ current_indent ++ "}"
+  prettyPrint NonCommandElement indent_value = putStrLn $ current_indent ++ "NonCommandElement{}"
+    where
+      current_indent = indentTab indent_value
 
 instance PrettyPrint CommandInvocation where
   prettyPrint (CommandInvocation x y) indent_value = do
-    putStrLn $ indentTab indent_value ++ "CommandInvocation{"
-    putStrLn $ indentTab (indent_value + 1) ++ "commandId: " ++ show x
-    putStrLn $ indentTab (indent_value + 1) ++ "commandArgs: ["
-    mapM_ (\x -> prettyPrint x $ indent_value + 2) y
-    putStrLn $ indentTab (indent_value + 1) ++ "]"
-    putStrLn $ indentTab indent_value ++ "}"
+    let child_indent_value = indent_value + 1
+    let sub_child_indent_value = child_indent_value + 1
+    let current_indent = indentTab indent_value
+    let child_indent = indentTab child_indent_value
+    putStrLn $ current_indent ++ "CommandInvocation{"
+    putStrLn $ child_indent ++ "commandId: " ++ show x
+    putStrLn $ child_indent ++ "commandArgs: ["
+    mapM_ (`prettyPrint` sub_child_indent_value) y
+    putStrLn $ child_indent ++ "]"
+    putStrLn $ current_indent ++ "}"
 
 instance PrettyPrint Argument where
   prettyPrint (Argument x) indent_value = do
-    putStrLn $ indentTab indent_value ++ "Argument{"
+    let current_indent = indentTab indent_value
+    putStrLn $ current_indent ++ "Argument{"
     prettyPrint x $ indent_value + 1
-    putStrLn $ indentTab indent_value ++ "}"
+    putStrLn $ current_indent ++ "}"
 
 instance PrettyPrint Literal where
-  prettyPrint (Literal []) indent_value = putStrLn $ indentTab indent_value ++ "Literal{}"
-  prettyPrint (Literal (x:xs)) indent_value = do
-    putStrLn $ indentTab indent_value ++ "Literal{"
+  prettyPrint (Literal []) indent_value = putStrLn $ current_indent ++ "Literal{}"
+    where
+      current_indent = indentTab indent_value
+  prettyPrint (Literal (x : xs)) indent_value = do
+    let current_indent = indentTab indent_value
+    putStrLn $ current_indent ++ "Literal{"
     prettyPrint x $ indent_value + 1
-    mapM_ (\x -> prettyPrint x $ indent_value + 1) xs
-    putStrLn $ indentTab indent_value ++ "}"
+    mapM_ (`prettyPrint` (indent_value + 1)) xs
+    putStrLn $ current_indent ++ "}"
 
 instance PrettyPrint LiteralElem where
   prettyPrint (LiteralString x) indent_value = putStrLn $ indentTab indent_value ++ "LiteralString{literalString: " ++ show x ++ "}"
@@ -74,7 +86,7 @@ main :: IO ()
 main = do
   args <- getArgs
   let (filename, error_message) = parseArgs args
-  if error_message /= "" then
-    putStrLn error_message
-  else do
-    parseFile filename
+  if error_message /= ""
+    then putStrLn error_message
+    else do
+      parseFile filename
